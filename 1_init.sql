@@ -1,17 +1,21 @@
-drop database if exists exam_matthieu;
-create database exam_matthieu;
+-- DATA LOADING PART, tutorial
+-- for this training, i must delete AWS credentials, then you might adapt tables & data from kaggle folder.
 
--- créer le lien avec le bucket s3
+-- Drop and recreate the database if it already exists
+drop database if exists sanou_database;
+create database sanou_database;
+
+-- Create a connection to the S3 bucket
 create stage s3_data
-  url = 's3://course-snowflakes/sample/'
+  url = 's3'
   credentials = (aws_key_id='access_key',
                 aws_secret_key='secret_key'); 
 
--- format de fichier .csv 
+-- Define the .csv file format
 -- DROP FILE FORMAT CLASSIC_CSV;
 CREATE FILE FORMAT CLASSIC_CSV;
 
-ALTER FILE FORMAT "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV 
+ALTER FILE FORMAT "sanou_database"."PUBLIC".CLASSIC_CSV 
 SET COMPRESSION = 'AUTO' 
 RECORD_DELIMITER = '\n'
 FIELD_DELIMITER = ',' 
@@ -25,12 +29,12 @@ ESCAPE = 'NONE'
 ESCAPE_UNENCLOSED_FIELD = '\134' 
 NULL_IF = ('\\N');
 
--- retrouver les données music
+-- View music data in the S3 bucket
 list @s3_data;
 list @s3_data/music;
 
--- IMPLEMENTATION ET PEUPLEMENT DES TABLES :
--- Table PlaylistTrack
+-- IMPLEMENTATION AND POPULATION OF TABLES:
+-- PlaylistTrack Table
 CREATE TABLE IF NOT EXISTS PUBLIC.PlaylistTrack (
     "PlaylistId" NUMBER,
     "TrackId" NUMBER,
@@ -41,13 +45,13 @@ CREATE TABLE IF NOT EXISTS PUBLIC.PlaylistTrack (
         REFERENCES PUBLIC.Track("TrackId")
 );
 
--- Table Playlist
+-- Playlist Table
 CREATE TABLE IF NOT EXISTS PUBLIC.Playlist (
     "PlaylistId" NUMBER PRIMARY KEY,
     "Name" VARCHAR(255) NOT NULL
 );
 
--- Table Track
+-- Track Table
 CREATE TABLE IF NOT EXISTS PUBLIC.Track (
     "TrackId" NUMBER PRIMARY KEY,
     "Name" VARCHAR(255) NOT NULL,
@@ -66,19 +70,19 @@ CREATE TABLE IF NOT EXISTS PUBLIC.Track (
         REFERENCES PUBLIC.Album("AlbumId")
 );
 
--- Table Genre
+-- Genre Table
 CREATE TABLE IF NOT EXISTS PUBLIC.Genre (
     "GenreId" NUMBER PRIMARY KEY,
     "Name" VARCHAR(255) NOT NULL
 );
 
--- Table MediaType
+-- MediaType Table
 CREATE TABLE IF NOT EXISTS PUBLIC.MediaType (
     "MediaTypeId" NUMBER PRIMARY KEY,
     "Name" VARCHAR(255) NOT NULL
 );
 
--- Table Artist
+-- Artist Table
 CREATE TABLE IF NOT EXISTS PUBLIC.Artist (
     "ArtistId" NUMBER PRIMARY KEY,
     "Name" VARCHAR(255) NOT NULL,
@@ -86,55 +90,56 @@ CREATE TABLE IF NOT EXISTS PUBLIC.Artist (
     "Country" VARCHAR(255)
 );
 
--- Table Album
+-- Album Table
 CREATE TABLE IF NOT EXISTS PUBLIC.Album (
     "AlbumId" NUMBER PRIMARY KEY,
     "Title" VARCHAR(255) NOT NULL,
     "ArtistId" NUMBER,
-    "Prod_year" NUMBER,  -- vérif énoncé sans "_" check le nom des colonnes .csv
-    "Cd_year" NUMBER,    -- vérif énoncé sans "_" check le nom des colonnes .csv
+    "Prod_year" NUMBER,  -- different from schema check column names in CSV file
+    "Cd_year" NUMBER,    -- different from schema check column names in CSV file
     CONSTRAINT fk_album_artist FOREIGN KEY ("ArtistId") 
         REFERENCES PUBLIC.Artist("ArtistId")
 );
--- vérification des colonnes du csv pour garder les bonnes valeurs
+-- Check columns in the CSV file to retain correct values
 SELECT  a.$1, a.$2, a.$3, a.$4, a.$5  FROM @s3_data/music/Album.csv a LIMIT 5;
 ALTER TABLE PUBLIC.Album
     RENAME COLUMN "Prod_year" TO "ProductionYear";
 ALTER TABLE PUBLIC.Album 
     RENAME COLUMN "Cd_year" TO "CD_number";
 
--- intégration des données du .csv vers ma base
+-- Load data from .csv files into the database
 COPY INTO PUBLIC.Album
 FROM @s3_data/music/Album.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);   --
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CLASSIC_CSV);   --
 
 COPY INTO PUBLIC.Artist
 FROM @s3_data/music/Artist.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);   --
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CLASSIC_CSV);   --
 
 COPY INTO PUBLIC.Genre
 FROM @s3_data/music/Genre.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);   --
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CLASSIC_CSV);   --
 
 COPY INTO PUBLIC.MediaType
 FROM @s3_data/music/MediaType.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);   --
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CLASSIC_CSV);   --
 
 COPY INTO PUBLIC.Playlist
 FROM @s3_data/music/Playlist.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);   --
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CLASSIC_CSV);   --
 
 COPY INTO PUBLIC.PlaylistTrack
 FROM @s3_data/music/PlaylistTrack.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);   --
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CLASSIC_CSV);   --
 
 COPY INTO PUBLIC.Track
 FROM @s3_data/music/Track.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);   -- erreur d'insertion, pb colonnes ?
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CLASSIC_CSV);   -- issue with column alignment?
 
--- vérif table Track 
+-- MANIPULATIONS WHEN THERE IS ERROR :
+-- Verify columns in Track table data
 SELECT  a.$1, a.$2, a.$3, a.$4, a.$5, a.$6, a.$7, a.$8, a.$9, a.$10, a.$11, a.$12, a.$13, a.$14, a.$15 FROM @s3_data/music/Track.csv a;
--- problème dans l'ordre des colonnes, je recrée la table PUBLIC.Track
+-- Problem with column order; recreating PUBLIC.Track table
 CREATE TABLE IF NOT EXISTS PUBLIC.Track_n (
     "TrackId" NUMBER PRIMARY KEY,
     "Title" VARCHAR(255) NOT NULL,
@@ -152,7 +157,7 @@ CREATE TABLE IF NOT EXISTS PUBLIC.Track_n (
     CONSTRAINT fk_track_album FOREIGN KEY ("AlbumId") 
         REFERENCES PUBLIC.Album("AlbumId")
 );
--- PENSER A TRANSFERER LES DONNEES !!
+-- Remember to transfer data!
 INSERT INTO PUBLIC.Track_n
 SELECT 
     "TrackId",
@@ -165,18 +170,18 @@ SELECT
     "Bytes",
     "UnitPrice"
 FROM PUBLIC.Track;
--- drop track
+-- Drop old Track table
 DROP TABLE PUBLIC.Track;
--- je change le nom de Track_n
+-- Rename Track_n to Track
 ALTER TABLE PUBLIC.Track_n
 RENAME TO Track;
--- Je rééssaie d'intégrer les données track
+-- Retry data insertion into Track
 COPY INTO PUBLIC.Track
 FROM @s3_data/music/Track.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CLASSIC_CSV);
 
 --
--- Nouvelles erreurs je tente une table "POUBELLE" pour regarder les erreurs 
+-- Troubleshoot using a "trash" table to view errors by creating a dynamic table from .csv file
 --
 -- DROP TABLE PUBLIC.Track_trash;
 -- CREATE TABLE IF NOT EXISTS PUBLIC.Track_trash (
@@ -200,16 +205,16 @@ FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CLASSIC_CSV);
 -- SELECT  a.$1, a.$2, a.$3, a.$4, a.$5, a.$6, a.$7, a.$8, a.$9, a.$10, a.$11, a.$12, a.$13, a.$14
 -- FROM @s3_data/music/Track.csv a;
 
--- select * from track_trash;
+-- SELECT * FROM track_trash;
 
 -- SELECT * 
 -- FROM Track_trash
 -- WHERE "[10]" IS NULL;
 
--- problème de format pour TRACK ! je crée un nouveau format de lecture CSV
+-- Formatting issue in Track! Create a new CSV file format
 CREATE FILE FORMAT csv_error;
 
-ALTER FILE FORMAT "EXAM_MATTHIEU"."PUBLIC".CSV_ERROR 
+ALTER FILE FORMAT "sanou_database"."PUBLIC".CSV_ERROR 
 SET COMPRESSION = 'AUTO' 
 RECORD_DELIMITER = '\n'
 FIELD_DELIMITER = ',' 
@@ -223,7 +228,7 @@ ESCAPE = 'NONE'
 ESCAPE_UNENCLOSED_FIELD = '\134' 
 NULL_IF = ('\\N');
 
--- test avec une nouvelle table Track_n
+-- Test with a new Track_n table
 -- DROP TABLE Track_n;
 CREATE TABLE IF NOT EXISTS PUBLIC.Track_n (
     "TrackId" NUMBER PRIMARY KEY,
@@ -242,11 +247,12 @@ CREATE TABLE IF NOT EXISTS PUBLIC.Track_n (
     CONSTRAINT fk_track_album FOREIGN KEY ("AlbumId") 
         REFERENCES PUBLIC.Album("AlbumId")
 );
--- On perd 124 lignes en faisant le contournement de l'erreur proposé dans l'énoncé :
--- mais on peut ajouter le csv pour les lignes qui sont correctement renseignées.
-COPY INTO PUBLIC.Track -- PUBLIC.Track_n pour le test
+-- Retry loading Track data with the new format
+-- We lose 124 rows by continuing after errors... Whatever u_u
+
+COPY INTO PUBLIC.Track -- Use PUBLIC.Track_n for testing before PUBLIC.Track
 FROM @s3_data/music/Track.csv
-FILE_FORMAT = (FORMAT_NAME = "EXAM_MATTHIEU"."PUBLIC".CSV_ERROR,
+FILE_FORMAT = (FORMAT_NAME = "sanou_database"."PUBLIC".CSV_ERROR,
                ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE)
 ON_ERROR = 'CONTINUE';
 

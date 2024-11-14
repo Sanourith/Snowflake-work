@@ -1,5 +1,9 @@
 # Training with Snowflake
 
+\# CAUTION in my example, i used data from S3 bucket in AWS. I can't share credentials then you might take this work as an example, and try it out with a public data_set, like [this kaggle repo](https://www.kaggle.com/datasets/yasserh/song-popularity-dataset).\
+Thanks for understanding #
+
+
 # Data Loading
 We have the following schema:
 
@@ -14,7 +18,7 @@ Next, transform the normalized data from the previous step into a star schema. H
 
 Then, create the tables for the proposed star schema in a file named ***_star.sql_***.
 
-# Queries
+# Queries examples & conversion
 Finally, in a file named query.sql, write the queries that answer the following questions:
 
 1. What are the titles of the albums that have more than 1 CD?

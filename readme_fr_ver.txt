@@ -1,18 +1,15 @@
-Hello cher correcteur !
+Hello cher lecteur !
 
-Petit récap des étapes de mon devoir :
-(les points avec un (x) sont liés à une question de ma part)
+Petit récap des étapes de mon travail :
 
 1/ init.sql
     - Création DB 
-    - Connection Stage S3 
+    - Connection Stage S3 bucket AWS
     - Création file_format CSV
     - Création des tables selon le schémas
     - Modif colonnes dans la table "Album"
     - Intégration des données .csv dans les tables 
-x   - Gestion du cas de la table "Tracks" =====> Comment gérer les "décallages colonnes" en dehors de la solution de l'énoncé ????
-        - Modification de l'ordre des colonnes 
-        - Modification format csv pour accueillir les données et continuer en cas d'erreur
+    - Gestion du cas de la table "Tracks" 
 
 2/ star.sql 
     - Table des faits : Tracks 
@@ -28,11 +25,8 @@ x   - Gestion du cas de la table "Tracks" =====> Comment gérer les "décallages
     - Création des requêtes SQL
     - Ajout de la fonction "insert into <temp_results>" et modifs SELECT
     - Création du format .txt
-    - Création du stage matthieu_serrano_stage
-    - Copy de la table Temp_Results dans @matthieu_serrano_stage/answer.txt
+    - Création du stage sanou_stage
+    - Copy de la table Temp_Results dans @sanou_stage/answer.txt
     - Téléchargement du fichier sur l'interface SnowFlake (dans l'archive)
 
-Si vous avez des remarques / conseils à m'apporter, je suis preneur !!
-Belle journée,
-
-Matthieu Serrano.
+Vous avez toutes les clefs !
