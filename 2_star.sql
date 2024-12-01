@@ -31,7 +31,9 @@ CREATE TABLE Star_Schema.New_tracks (
     "MediaTypeId" NUMBER,           -- Media type unique identifier
     "MediaTypeName" VARCHAR(255),   -- Media type name
     "PlaylistId" NUMBER,            -- Playlist unique identifier
-    "PlayListName" VARCHAR(255)     -- Playlist name
+    "PlayListName" VARCHAR(255),    -- Playlist name
+    -- "inserted_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Populate the New_Tracks table with data from various related tables
@@ -69,3 +71,19 @@ LEFT JOIN PUBLIC.Genre AS gen ON t."GenreId" = gen."GenreId"                -- J
 LEFT JOIN PUBLIC.MediaType AS med ON t."MediaTypeId" = med."MediaTypeId"    -- Join Track with MediaType on MediaType ID
 LEFT JOIN PUBLIC.PlaylistTrack AS plt ON t."TrackId" = plt."TrackId"        -- Join Track with PlaylistTrack on Track ID
 LEFT JOIN PUBLIC.Playlist AS pl ON plt."PlaylistId" = pl."PlaylistId";      -- Join PlaylistTrack with Playlist on Playlist ID
+
+
+
+-- Si on veut merge 2 tables 
+-- Table + table_staging
+
+-- MERGE INTO data.table AS target
+-- USING data.table_staging AS source
+-- ON target.id = source.id 
+-- WHEN MATCHED THEN
+--     UPDATE SET
+    -- toutes les colonnes = source.colonnes
+
+
+
+-- ensuite on troncate la staging pour vider les données après merge.
